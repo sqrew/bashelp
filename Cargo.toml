@@ -6,7 +6,7 @@ description = "Natural language to shell commands. Local-first, provider agnosti
 license = "MIT"
 repository = "https://github.com/sqrew/bashelp"
 readme = "README.md"
-keywords = ["cli", "shell", "ai", "llm", "bash", "ollama"]
+keywords = ["cli", "shell", "ai", "llm", "ollama"]
 categories = ["command-line-utilities"]
 
 [dependencies]
