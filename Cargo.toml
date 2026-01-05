@@ -5,6 +5,7 @@ edition = "2024"
 description = "Natural language to shell commands. Local-first, provider agnostic."
 license = "MIT"
 repository = "https://github.com/sqrew/bashelp"
+readme = "README.md"
 keywords = ["cli", "shell", "ai", "llm", "bash", "ollama"]
 categories = ["command-line-utilities"]
 
