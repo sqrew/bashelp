@@ -1,1 +1,0 @@
-/home/sqrew/Desktop/bashelp/target/debug/bashelp: /home/sqrew/Desktop/bashelp/src/config.rs /home/sqrew/Desktop/bashelp/src/executor.rs /home/sqrew/Desktop/bashelp/src/main.rs /home/sqrew/Desktop/bashelp/src/prompt.rs /home/sqrew/Desktop/bashelp/src/provider/mod.rs /home/sqrew/Desktop/bashelp/src/provider/ollama.rs /home/sqrew/Desktop/bashelp/src/ui.rs
