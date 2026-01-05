@@ -1,0 +1,1 @@
+/home/sqrew/Desktop/shai/target/debug/shai: /home/sqrew/Desktop/shai/src/config.rs /home/sqrew/Desktop/shai/src/executor.rs /home/sqrew/Desktop/shai/src/main.rs /home/sqrew/Desktop/shai/src/prompt.rs /home/sqrew/Desktop/shai/src/provider/mod.rs /home/sqrew/Desktop/shai/src/provider/ollama.rs /home/sqrew/Desktop/shai/src/ui.rs
