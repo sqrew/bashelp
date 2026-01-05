@@ -1,3 +1,4 @@
+mod claude;
 mod ollama;
 
 use async_trait::async_trait;
@@ -36,9 +37,18 @@ pub fn create_provider(
                 .unwrap_or_else(|| "http://localhost:11434".to_string());
             Ok(Box::new(ollama::OllamaProvider::new(endpoint, model.to_string())))
         }
-        // Future providers go here:
+        "claude" | "anthropic" => {
+            let api_key = config
+                .provider
+                .api_key
+                .clone()
+                .ok_or_else(|| ProviderError::ProviderError(
+                    "Claude provider requires an API key. Set it with: bashelp config set provider.api_key YOUR_KEY".to_string()
+                ))?;
+            Ok(Box::new(claude::ClaudeProvider::new(api_key, model.to_string())))
+        }
+        // Future providers:
         // "openai" => { ... }
-        // "claude" => { ... }
         // "groq" => { ... }
         _ => Err(ProviderError::UnknownProvider(name.to_string())),
     }

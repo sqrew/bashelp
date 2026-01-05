@@ -1,0 +1,16 @@
+# Build artifacts
+/target/
+
+# Config (stored in ~/.config/bashelp/, but just in case)
+config.toml
+*.toml.bak
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

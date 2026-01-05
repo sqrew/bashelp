@@ -9,11 +9,21 @@ pub enum ExecutorError {
     NonZeroExit(i32),
 }
 
+#[cfg(windows)]
+fn get_shell() -> (&'static str, &'static str) {
+    ("cmd", "/c")
+}
+
+#[cfg(not(windows))]
+fn get_shell() -> (String, &'static str) {
+    (std::env::var("SHELL").unwrap_or_else(|_| "sh".to_string()), "-c")
+}
+
 pub fn run_command(command: &str) -> Result<(), ExecutorError> {
-    let shell = std::env::var("SHELL").unwrap_or_else(|_| "bash".to_string());
+    let (shell, flag) = get_shell();
 
     let status = Command::new(&shell)
-        .arg("-c")
+        .arg(flag)
         .arg(command)
         .status()?;
 

@@ -11,9 +11,11 @@ use colored::Colorize;
 #[command(name = "bashelp")]
 #[command(about = "Natural language to shell commands. Local-first, provider agnostic.")]
 #[command(version)]
+#[command(trailing_var_arg = true)]
 struct Cli {
-    /// The natural language query
-    query: Option<String>,
+    /// The natural language query (no quotes needed)
+    #[arg(trailing_var_arg = true)]
+    query: Vec<String>,
 
     /// Skip confirmation, run immediately
     #[arg(short = 'y', long)]
@@ -79,13 +81,12 @@ async fn main() -> anyhow::Result<()> {
     }
 
     // Need a query for main operation
-    let query = match cli.query {
-        Some(q) => q,
-        None => {
-            eprintln!("{}", "Usage: bashelp \"your query here\"".yellow());
-            eprintln!("       bashelp --help for more options");
-            std::process::exit(1);
-        }
+    let query = if cli.query.is_empty() {
+        eprintln!("{}", "Usage: bashelp how do I list files".yellow());
+        eprintln!("       bashelp --help for more options");
+        std::process::exit(1);
+    } else {
+        cli.query.join(" ")
     };
 
     // Load config

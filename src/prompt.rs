@@ -9,6 +9,16 @@ pub enum PromptError {
     LlmError(String),
 }
 
+#[cfg(windows)]
+fn get_shell_name() -> String {
+    "cmd".to_string()
+}
+
+#[cfg(not(windows))]
+fn get_shell_name() -> String {
+    env::var("SHELL").unwrap_or_else(|_| "sh".to_string())
+}
+
 const SYSTEM_PROMPT: &str = r#"You are a shell command generator. The user will describe what they want to do, and you output ONLY the shell command to accomplish it. No explanation, no markdown, no code blocks - just the raw command.
 
 Context:
@@ -37,7 +47,7 @@ pub fn build_prompt(query: &str, explain_mode: bool) -> Result<String, PromptErr
 
     let os = env::consts::OS;
     let cwd = env::current_dir()?.display().to_string();
-    let shell = env::var("SHELL").unwrap_or_else(|_| "bash".to_string());
+    let shell = get_shell_name();
 
     let system = SYSTEM_PROMPT
         .replace("{os}", os)
