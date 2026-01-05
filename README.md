@@ -1,293 +1,142 @@
-#+TITLE: shai - Shell AI
-#+DATE: <2026-01-05 Sun>
-#+DESCRIPTION: Natural language to bash. Any LLM. One binary. A shy little helper.
+# bashelp
 
-* Overview
+Natural language to shell commands. Local-first, provider agnostic.
 
-shai (Shell AI) is a CLI tool that translates natural language into shell commands using any LLM provider.
+```
+$ bashelp "find all rust files modified this week"
 
-** Elevator Pitch
+→ find . -name "*.rs" -mtime -7
 
-"Tell your terminal what you want in plain English. Works with any LLM."
+[Enter to run, 'c' to copy, 'e' to edit, 'q' to quit]:
+```
 
-A shy little helper that whispers bash commands to you.
+## Why bashelp?
 
-** Why This Could Pop
+Most AI shell assistants require an OpenAI API key and send your commands to the cloud. **bashelp is local-first** — it works with [ollama](https://ollama.ai) out of the box, keeping your data on your machine.
 
-- Nothing definitive exists yet in this space
-- Rust = single binary, fast, easy install
-- API agnostic = works with whatever people already use
-- Simple concept, immediately useful
-- Screenshots/demos are compelling
-- Daily use tool (the ripgrep pattern)
-- Cute name with personality
+- **No API key required** to get started
+- **Your shell context stays local** — nothing sent to the cloud
+- **Provider agnostic** — works with ollama, OpenAI, Claude, Groq, or any compatible API
+- **Fast** — single Rust binary, minimal dependencies
 
-* Core Flow
+## Installation
 
-#+begin_src
-User: shai "find large files in this directory"
-        │
-        ▼
-┌───────────────────┐
-│ shai CLI          │
-│ - parse input     │
-│ - load config     │
-│ - build prompt    │
-└────────┬──────────┘
-         │
-         ▼
-┌───────────────────┐
-│ LLM Provider      │
-│ (ollama/openai/   │
-│  claude/groq/etc) │
-└────────┬──────────┘
-         │
-         ▼
-┌───────────────────┐
-│ Response Parser   │
-│ - extract command │
-│ - validate        │
-└────────┬──────────┘
-         │
-         ▼
-┌───────────────────┐
-│ Confirmation      │
-│ [Enter/e/q]       │
-└────────┬──────────┘
-         │ (if confirmed)
-         ▼
-┌───────────────────┐
-│ Execute & Display │
-└───────────────────┘
-#+end_src
+```bash
+cargo install bashelp
+```
 
-* Features
+Or build from source:
 
-** MVP (v0.1)
+```bash
+git clone https://github.com/sqrew/bashelp
+cd bashelp
+cargo build --release
+```
 
-- [ ] Natural language input → bash command output
-- [ ] Single provider support (start with ollama)
-- [ ] Confirmation before execution
-- [ ] Basic config file (~/.config/shai/config.toml)
-- [ ] Context: current working directory
-- [ ] --yes flag to skip confirmation (dangerous but useful)
+## Quick Start
 
-** v0.2
+1. **Install ollama** (if you haven't): https://ollama.ai
 
-- [ ] Multiple provider support (ollama, openai, claude, groq)
-- [ ] Provider switching via config or flag
-- [ ] Shell history context (last N commands)
-- [ ] Edit command before running (open in $EDITOR or inline)
-- [ ] Explain mode: shai --explain "command" (explain what a command does)
+2. **Pull a model**:
+   ```bash
+   ollama pull llama3
+   ```
 
-** v0.3
+3. **Set your default model**:
+   ```bash
+   bashelp use llama3
+   ```
 
-- [ ] Conversation mode (follow-up questions)
-- [ ] Command history/learning (remember what worked)
-- [ ] Fish/zsh/bash completion
-- [ ] Pipe support: echo "task" | shai
-- [ ] OS-aware (different commands for linux/mac)
+4. **Ask for help**:
+   ```bash
+   bashelp "list files larger than 100mb"
+   ```
 
-** Future / Maybe
+## Usage
 
-- [ ] Plugin system for custom providers
-- [ ] Local model support (llama.cpp direct, no ollama)
-- [ ] TUI mode for browsing suggestions
-- [ ] "Dangerous command" warnings (rm -rf, etc)
-- [ ] Undo support (where possible)
+```
+bashelp <query>              Ask for a shell command
+bashelp use <model>          Set default model
+bashelp config init          Create config file
+bashelp config show          Show current config
+bashelp --help               Show all options
+```
 
-* Architecture
+### Flags
 
-** Crates / Modules
+| Flag | Description |
+|------|-------------|
+| `-y, --yes` | Skip confirmation, run immediately |
+| `-e, --explain` | Explain a command instead of generating one |
+| `-m, --model` | Override model for this query |
+| `-p, --provider` | Override provider for this query |
+| `-v, --verbose` | Show debug info |
+| `--dry-run` | Show command but don't execute |
 
-#+begin_src
-shai/
-├── Cargo.toml
-├── src/
-│   ├── main.rs           # Entry point, CLI parsing
-│   ├── config.rs         # Config loading/saving
-│   ├── provider/
-│   │   ├── mod.rs        # Provider trait
-│   │   ├── ollama.rs     # Ollama implementation
-│   │   ├── openai.rs     # OpenAI implementation
-│   │   ├── claude.rs     # Claude/Anthropic implementation
-│   │   └── groq.rs       # Groq implementation
-│   ├── prompt.rs         # Prompt building with context
-│   ├── parser.rs         # Response parsing (extract command)
-│   ├── executor.rs       # Command execution
-│   └── ui.rs             # Confirmation UI, colors, output
-└── README.md
-#+end_src
+### Examples
 
-** Provider Trait
+```bash
+# Generate a command
+bashelp "compress this folder"
 
-#+begin_src rust
-#[async_trait]
-pub trait Provider {
-    async fn complete(&self, prompt: &str) -> Result<String>;
-    fn name(&self) -> &str;
-}
-#+end_src
+# Run without confirmation
+bashelp -y "update system packages"
 
-** Config Structure
+# Explain a command you don't understand
+bashelp --explain "tar -xzvf"
 
-#+begin_src toml
-# ~/.config/shai/config.toml
+# Use a specific model for one query
+bashelp -m mistral "disk usage by folder"
+```
 
+## Configuration
+
+Config lives at `~/.config/bashelp/config.toml`:
+
+```toml
 [provider]
-name = "ollama"           # ollama | openai | claude | groq
-model = "llama3"          # model name
-endpoint = "http://localhost:11434"  # optional, for self-hosted
-
-[provider.openai]
-api_key = "sk-..."        # or use OPENAI_API_KEY env var
-
-[provider.claude]
-api_key = "sk-ant-..."    # or use ANTHROPIC_API_KEY env var
+name = "ollama"
+model = "llama3"
+endpoint = "http://localhost:11434"
 
 [behavior]
-confirm = true            # require confirmation before running
-context_lines = 10        # lines of shell history to include
-dangerous_warn = true     # warn on rm -rf, etc
-#+end_src
+confirm = true
+dangerous_warn = true
+```
 
-* Prompt Engineering
+### Using Other Providers
 
-** System Prompt (v1)
+**OpenAI:**
+```bash
+bashelp config set provider.name openai
+bashelp config set provider.api_key sk-...
+bashelp config set provider.model gpt-4
+```
 
-#+begin_example
-You are a shell command generator. The user will describe what they want to do, and you output ONLY the shell command to accomplish it. No explanation, no markdown, no code blocks - just the raw command.
+**Claude:**
+```bash
+bashelp config set provider.name claude
+bashelp config set provider.api_key sk-ant-...
+bashelp config set provider.model claude-3-sonnet
+```
 
-Context:
-- Operating system: {os}
-- Current directory: {cwd}
-- Shell: {shell}
-- Recent commands:
-{history}
+## Supported Providers
 
-Rules:
-- Output ONLY the command, nothing else
-- Use common, portable commands when possible
-- If the task is ambiguous, make reasonable assumptions
-- If the task is impossible or dangerous, output: ERROR: <reason>
-#+end_example
+| Provider | Status | Local | API Key Required |
+|----------|--------|-------|------------------|
+| ollama | ✅ Works | Yes | No |
+| OpenAI | 🚧 Planned | No | Yes |
+| Claude | 🚧 Planned | No | Yes |
+| Groq | 🚧 Planned | No | Yes |
 
-** Example Exchanges
+## License
 
-| Input | Output |
-|-------|--------|
-| "find rust files modified today" | find . -name "*.rs" -mtime 0 |
-| "disk usage sorted by size" | du -sh * \vert sort -h |
-| "kill process on port 3000" | kill $(lsof -t -i:3000) |
-| "compress this folder" | tar -czvf archive.tar.gz . |
-| "search for TODO in all files" | grep -r "TODO" . |
+MIT
 
-* CLI Interface
+## Contributing
 
-#+begin_src
-shai - Natural language to shell commands
+PRs welcome! This project is built with love and Rust.
 
-USAGE:
-    shai <query>              Execute natural language query
-    shai --explain <cmd>      Explain what a command does
-    shai config set <k> <v>   Set config value
-    shai config get <k>       Get config value
-    shai config show          Show all config
-    shai --help               Show help
+---
 
-FLAGS:
-    -y, --yes              Skip confirmation, run immediately
-    -e, --explain          Explain mode (describe a command)
-    -p, --provider <name>  Override provider for this query
-    -m, --model <name>     Override model for this query
-    -v, --verbose          Show debug info (prompt, response, etc)
-    --dry-run              Show command but don't offer to execute
-
-EXAMPLES:
-    shai "list files larger than 100mb"
-    shai "git commits from last week"
-    shai --yes "update all packages"
-    shai --explain "tar -xzvf"
-#+end_src
-
-* Dependencies
-
-#+begin_src toml
-[dependencies]
-tokio = { version = "1", features = ["full"] }
-reqwest = { version = "0.11", features = ["json"] }
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
-toml = "0.8"
-clap = { version = "4", features = ["derive"] }
-dirs = "5"                    # for config paths
-colored = "2"                 # terminal colors
-dialoguer = "0.11"            # confirmations/prompts
-async-trait = "0.1"
-thiserror = "1"
-#+end_src
-
-* Competition / Existing Tools
-
-| Tool | Language | Providers | Notes |
-|------|----------|-----------|-------|
-| shell-gpt | Python | OpenAI mainly | Popular but Python, slow startup |
-| github copilot cli | ??? | GitHub/OpenAI | Locked to GitHub ecosystem |
-| aichat | Rust | Multiple | More of a chat tool, not shell-focused |
-| mods | Go | Multiple | By Charm, more general purpose |
-
-** Our Angle
-
-- Rust (fast, single binary)
-- Shell-focused (not general chat)
-- Truly provider agnostic
-- Simple, does one thing well
-- Pretty output, good UX
-- Personality (the shy helper)
-
-* Marketing / Launch
-
-** README Must-Haves
-
-- Sick GIF demo at the top
-- One-liner install
-- 3-step quickstart
-- Provider setup guides
-- "Why shai?" section
-
-** Places to Post
-
-- r/rust
-- r/commandline
-- r/linux
-- Hacker News
-- Lobste.rs
-- Twitter/X
-- Mastodon
-
-** Taglines
-
-- "Talk to your terminal"
-- "Natural language to bash. Any LLM. One binary."
-- "Stop googling shell commands"
-- "A shy little AI that whispers bash commands"
-- "Your shy shell helper"
-
-* Open Questions
-
-- [X] Name: shai (Shell AI, sounds like "shy")
-- [ ] License: MIT? Apache?
-- [ ] Should explain mode be default or require flag?
-- [ ] How to handle multi-line commands / scripts?
-- [ ] Windows support? (PowerShell translation?)
-
-* References
-
-- [[https://github.com/TheR1D/shell_gpt][shell-gpt]]
-- [[https://github.com/charmbracelet/mods][mods by Charm]]
-- [[https://github.com/sigoden/aichat][aichat]]
-
-* Notes
-
-Space for random thoughts as we build...
-
+Made by [sqrew](https://github.com/sqrew) with help from Claude.
