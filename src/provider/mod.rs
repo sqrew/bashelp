@@ -1,5 +1,9 @@
 mod claude;
+mod gemini;
+mod grok;
 mod ollama;
+mod openai;
+mod openai_compatible;
 
 use async_trait::async_trait;
 use thiserror::Error;
@@ -47,9 +51,121 @@ pub fn create_provider(
                 ))?;
             Ok(Box::new(claude::ClaudeProvider::new(api_key, model.to_string())))
         }
-        // Future providers:
-        // "openai" => { ... }
-        // "groq" => { ... }
+        "openai" | "chatgpt" | "gpt" => {
+            let api_key = config
+                .provider
+                .api_key
+                .clone()
+                .ok_or_else(|| ProviderError::ProviderError(
+                    "OpenAI provider requires an API key. Set it with: bashelp config set provider.api_key YOUR_KEY".to_string()
+                ))?;
+            Ok(Box::new(openai::OpenAIProvider::new(api_key, model.to_string())))
+        }
+        "grok" | "xai" => {
+            let api_key = config
+                .provider
+                .api_key
+                .clone()
+                .ok_or_else(|| ProviderError::ProviderError(
+                    "Grok provider requires an API key. Set it with: bashelp config set provider.api_key YOUR_KEY".to_string()
+                ))?;
+            Ok(Box::new(grok::GrokProvider::new(api_key, model.to_string())))
+        }
+        "gemini" | "google" => {
+            let api_key = config
+                .provider
+                .api_key
+                .clone()
+                .ok_or_else(|| ProviderError::ProviderError(
+                    "Gemini provider requires an API key. Set it with: bashelp config set provider.api_key YOUR_KEY".to_string()
+                ))?;
+            Ok(Box::new(gemini::GeminiProvider::new(api_key, model.to_string())))
+        }
+        // Convenience aliases for popular OpenAI-compatible services
+        "groq" => {
+            let api_key = config.provider.api_key.clone()
+                .ok_or_else(|| ProviderError::ProviderError(
+                    "Groq requires an API key. Set it with: bashelp config set provider.api_key YOUR_KEY".to_string()
+                ))?;
+            Ok(Box::new(openai_compatible::OpenAICompatibleProvider::new(
+                api_key, model.to_string(),
+                "https://api.groq.com/openai/v1/chat/completions".to_string()
+            )))
+        }
+        "mistral" => {
+            let api_key = config.provider.api_key.clone()
+                .ok_or_else(|| ProviderError::ProviderError(
+                    "Mistral requires an API key. Set it with: bashelp config set provider.api_key YOUR_KEY".to_string()
+                ))?;
+            Ok(Box::new(openai_compatible::OpenAICompatibleProvider::new(
+                api_key, model.to_string(),
+                "https://api.mistral.ai/v1/chat/completions".to_string()
+            )))
+        }
+        "perplexity" | "pplx" => {
+            let api_key = config.provider.api_key.clone()
+                .ok_or_else(|| ProviderError::ProviderError(
+                    "Perplexity requires an API key. Set it with: bashelp config set provider.api_key YOUR_KEY".to_string()
+                ))?;
+            Ok(Box::new(openai_compatible::OpenAICompatibleProvider::new(
+                api_key, model.to_string(),
+                "https://api.perplexity.ai/chat/completions".to_string()
+            )))
+        }
+        "together" => {
+            let api_key = config.provider.api_key.clone()
+                .ok_or_else(|| ProviderError::ProviderError(
+                    "Together AI requires an API key. Set it with: bashelp config set provider.api_key YOUR_KEY".to_string()
+                ))?;
+            Ok(Box::new(openai_compatible::OpenAICompatibleProvider::new(
+                api_key, model.to_string(),
+                "https://api.together.xyz/v1/chat/completions".to_string()
+            )))
+        }
+        "fireworks" => {
+            let api_key = config.provider.api_key.clone()
+                .ok_or_else(|| ProviderError::ProviderError(
+                    "Fireworks AI requires an API key. Set it with: bashelp config set provider.api_key YOUR_KEY".to_string()
+                ))?;
+            Ok(Box::new(openai_compatible::OpenAICompatibleProvider::new(
+                api_key, model.to_string(),
+                "https://api.fireworks.ai/inference/v1/chat/completions".to_string()
+            )))
+        }
+        "deepseek" => {
+            let api_key = config.provider.api_key.clone()
+                .ok_or_else(|| ProviderError::ProviderError(
+                    "DeepSeek requires an API key. Set it with: bashelp config set provider.api_key YOUR_KEY".to_string()
+                ))?;
+            Ok(Box::new(openai_compatible::OpenAICompatibleProvider::new(
+                api_key, model.to_string(),
+                "https://api.deepseek.com/chat/completions".to_string()
+            )))
+        }
+        "openrouter" => {
+            let api_key = config.provider.api_key.clone()
+                .ok_or_else(|| ProviderError::ProviderError(
+                    "OpenRouter requires an API key. Set it with: bashelp config set provider.api_key YOUR_KEY".to_string()
+                ))?;
+            Ok(Box::new(openai_compatible::OpenAICompatibleProvider::new(
+                api_key, model.to_string(),
+                "https://openrouter.ai/api/v1/chat/completions".to_string()
+            )))
+        }
+        // Generic OpenAI-compatible provider - bring your own endpoint
+        "openai-compatible" | "custom" => {
+            let api_key = config.provider.api_key.clone()
+                .ok_or_else(|| ProviderError::ProviderError(
+                    "Custom provider requires an API key. Set it with: bashelp config set provider.api_key YOUR_KEY".to_string()
+                ))?;
+            let endpoint = config.provider.endpoint.clone()
+                .ok_or_else(|| ProviderError::ProviderError(
+                    "Custom provider requires an endpoint. Set it with: bashelp config set provider.endpoint YOUR_URL".to_string()
+                ))?;
+            Ok(Box::new(openai_compatible::OpenAICompatibleProvider::new(
+                api_key, model.to_string(), endpoint
+            )))
+        }
         _ => Err(ProviderError::UnknownProvider(name.to_string())),
     }
 }
